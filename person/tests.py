@@ -147,7 +147,29 @@ class PersonViewSetTestCase(TestCaseWithUsers):
         self.assertGreater(len(response.data), 0)
 
     def test_update(self):
-        # Test update a person object
+        # Test update a person object with put
+        self.client.force_authenticate(user=self.admin_user)
+        update_url = reverse('person-detail', args=[self.admin_user.pk])
+        pprint(update_url) 
+        update_data = {
+            'username': 'admin',
+            'password': 'admin123',
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'jane@example.com',
+            'date_of_birth': '1990-01-01',
+            'phone': '+1234567890'
+        }
+        response = self.client.put(update_url, update_data, format='json')
+        pprint(response.json())
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        admin = user_model.objects.get(username='admin')
+        admin.refresh_from_db()
+        self.assertEqual(admin.first_name, 'Jane')
+        self.assertEqual(admin.phone, '+1234567890')
+    
+    def test_partial_update(self):
+        # Test update a person object with patch
         self.client.force_authenticate(user=self.admin_user)
         update_url = reverse('person-detail', args=[self.admin_user.pk])
         pprint(update_url) 
@@ -158,6 +180,8 @@ class PersonViewSetTestCase(TestCaseWithUsers):
         admin = user_model.objects.get(username='admin')
         admin.refresh_from_db()
         self.assertEqual(admin.first_name, 'Jane')
+        # last_name was not changed
+        self.assertEqual(admin.last_name, 'User')
 
     def test_delete_person(self):
         # Test deleting a person object
@@ -167,7 +191,6 @@ class PersonViewSetTestCase(TestCaseWithUsers):
         response = self.client.delete(delete_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(user_model.objects.count(), 1)
-
 
     def test_regular_user_access(self):
         # Test that regular users can't perform CRUD operations
@@ -274,7 +297,6 @@ class FilterPersonViewSetTestCase(TestCaseWithUsers):
         response = self.client.get(reverse('filter-person-list'), {'first_name': 'ad', 'max_age':'25'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.json()['results']), 1)
-
 
     def test_filter_person_with_large_user_numbers(self):
         for i in range(1000):
