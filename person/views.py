@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from rest_framework import mixins, viewsets, permissions, generics
+from rest_framework import mixins, viewsets, permissions, generics, exceptions
 from person.serializers import PersonSerializer, FilterPersonSerializer
 
 
@@ -23,7 +23,11 @@ class FilterPersonViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             last_name__contains=last_name
         )
         if min_age:
+            if not str.isdecimal(min_age):
+                raise exceptions.ValidationError({"min_age": ["min_age must be an integer"]})
             persons = [p for p in persons if p.get_age() and p.get_age() >= int(min_age)]
         if max_age:
+            if not str.isdecimal(max_age):
+                raise exceptions.ValidationError({"max_age": ["max_age must be an integer"]})
             persons = [p for p in persons if p.get_age() and p.get_age() <= int(max_age)]
         return persons

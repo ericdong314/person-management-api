@@ -7,6 +7,7 @@ age_field = serializers.ReadOnlyField(source='get_age')
 filter_person_fields = ['url', 'id', 'first_name', 'last_name', 
                         'email', 'phone', 'date_of_birth', 'age']
 
+
 class PersonSerializer(serializers.HyperlinkedModelSerializer):
     age = age_field
     
