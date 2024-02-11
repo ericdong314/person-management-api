@@ -16,12 +16,14 @@ class FilterPersonViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     def get_queryset(self):
         first_name = self.request.query_params.get("first_name", "")
         last_name = self.request.query_params.get("last_name", "")
-        age = self.request.query_params.get("age", "")
+        min_age = self.request.query_params.get("min_age", "")
+        max_age = self.request.query_params.get("max_age", "")
         persons = get_user_model().objects.filter(
             first_name__contains=first_name,
             last_name__contains=last_name
         )
-        if age:
-            persons = [p for p in persons if p.age == int(age)]
-        return persons 
-    
+        if min_age:
+            persons = [p for p in persons if p.get_age() and p.get_age() >= int(min_age)]
+        if max_age:
+            persons = [p for p in persons if p.get_age() and p.get_age() <= int(max_age)]
+        return persons
