@@ -22,7 +22,7 @@ This Django project provides a RESTful API for managing persons in the system. I
 1. Install dependencies:
 
    ```bash
-   pip install -r requirements.txt
+   pip install --user -r requirements.txt
    ```
 
 3. Run the development server:
