@@ -1,4 +1,7 @@
+from dateutil.relativedelta import relativedelta
+from django.utils.timezone import now
 from django.contrib.auth import get_user_model
+from django_filters import rest_framework as filters
 from rest_framework import mixins, viewsets, permissions, generics, exceptions
 from person.serializers import PersonSerializer, FilterPersonSerializer
 from drf_yasg.utils import swagger_auto_schema
@@ -11,34 +14,28 @@ class PersonViewSet(viewsets.ModelViewSet):
     queryset = get_user_model().objects.all()
 
 
+class PersonFilter(filters.FilterSet):
+    first_name = filters.CharFilter("first_name", "contains")
+    last_name  = filters.CharFilter("last_name",  "contains")
+    max_age    = filters.NumberFilter(method="filter_max_age")
+    min_age    = filters.NumberFilter(method="filter_min_age")
+
+    class Meta:
+        model = get_user_model()
+        fields = ["first_name", "last_name", "max_age", "min_age"]
+
+    def filter_max_age(self, query_set, name, value):
+        min_date_of_birth = now().date() - relativedelta(years=(value + 1))
+        return query_set.filter(date_of_birth__gt=min_date_of_birth)
+    
+    def filter_min_age(self, query_set, name, value):
+        max_date_of_birth = now().date() - relativedelta(years=value)
+        return query_set.filter(date_of_birth__lte=max_date_of_birth)
+
+
 class FilterPersonViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    queryset = get_user_model().objects.all()
     serializer_class =  FilterPersonSerializer
     permission_classes = [permissions.IsAuthenticated]
-
-    @swagger_auto_schema(manual_parameters=[
-        openapi.Parameter('first_name', openapi.IN_QUERY, description="Filter by first name", type=openapi.TYPE_STRING),
-        openapi.Parameter('last_name', openapi.IN_QUERY, description="Filter by last name", type=openapi.TYPE_STRING),
-        openapi.Parameter('min_age', openapi.IN_QUERY, description="Filter by minimum age", type=openapi.TYPE_INTEGER),
-        openapi.Parameter('max_age', openapi.IN_QUERY, description="Filter by maximum age", type=openapi.TYPE_INTEGER),
-    ])
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
-
-    def get_queryset(self):
-        first_name = self.request.query_params.get("first_name", "")
-        last_name = self.request.query_params.get("last_name", "")
-        min_age = self.request.query_params.get("min_age", "")
-        max_age = self.request.query_params.get("max_age", "")
-        persons = get_user_model().objects.filter(
-            first_name__contains=first_name,
-            last_name__contains=last_name
-        )
-        if min_age:
-            if not str.isdecimal(min_age):
-                raise exceptions.ValidationError({"min_age": ["min_age must be an integer"]})
-            persons = [p for p in persons if p.get_age() and p.get_age() >= int(min_age)]
-        if max_age:
-            if not str.isdecimal(max_age):
-                raise exceptions.ValidationError({"max_age": ["max_age must be an integer"]})
-            persons = [p for p in persons if p.get_age() and p.get_age() <= int(max_age)]
-        return persons
+    filter_backends = [filters.DjangoFilterBackend]
+    filterset_class = PersonFilter
