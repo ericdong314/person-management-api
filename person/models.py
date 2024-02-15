@@ -20,7 +20,7 @@ class Person(AbstractUser):
         if not birth:
             return None
         now = timezone.now()
-        birthday_passed = (now.month, now.day) > (birth.month, birth.day)
+        birthday_passed = (now.month, now.day) >= (birth.month, birth.day)
         age = now.year - birth.year
         if not birthday_passed:
             age -= 1
