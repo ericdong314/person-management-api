@@ -15,10 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path, include
-
+from django_filters.views import FilterView
+from django.contrib.auth import get_user_model
+from django.views.generic import ListView
 
 urlpatterns = [
     path('', include('person.urls')),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('doc/', include('person.swagger')),
+    path("filter/", FilterView.as_view(model=get_user_model()), name="my-person-list"),
+    path("list/", ListView.as_view(model=get_user_model()), name="my-list-view"),
 ]
